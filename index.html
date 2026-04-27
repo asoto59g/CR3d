@@ -59,6 +59,32 @@
     .close-profile:hover { color: white; }
     #profileStats { font-size: 11px; color: #94a3b8; display: flex; gap: 20px; }
     #profileStats span { color: white; font-weight: bold; }
+    
+    /* Legend Panel */
+    .legend-panel {
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .color-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -85,6 +111,25 @@
           <div class="result-row">Distancia: <span id="distVal">0</span> m</div>
           <div class="result-row">Área: <span id="areaVal">0</span> ha</div>
           <button id="btnClearMeasure" style="margin-top:10px; background:#ef4444; font-size:11px;">Borrar Medición</button>
+      </div>
+
+      <div id="legendUI" class="legend-panel">
+        <h2 style="font-size: 14px; margin-top: 10px;">Elevación</h2>
+        <div class="legend-grid">
+          <div class="legend-item"><div class="color-box" style="background: #0d3380;"></div> < 0 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #1a99cc;"></div> 0 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #26804d;"></div> 0 - 5 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #0d591a;"></div> 5 - 10 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #054005;"></div> 10 - 25 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #145914;"></div> 25 - 50 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #26731e;"></div> 50 - 100 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #809940;"></div> 100 - 1000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #a68c4d;"></div> 1000 - 1500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #8c7340;"></div> 1500 - 2000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #806140;"></div> 2000 - 2500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #73594d;"></div> 2500 - 3000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #999999;"></div> > 3000 m</div>
+        </div>
       </div>
     </div>
   </div>
@@ -132,6 +177,7 @@
     const chkPoblados = document.getElementById('chkPoblados');
     const chkCaminos = document.getElementById('chkCaminos');
     const chkRios = document.getElementById('chkRios');
+    const legendUI = document.getElementById('legendUI');
     const btnClearProfileMain = document.getElementById('btnClearProfileMain');
     const btnResetProfile = document.getElementById('btnResetProfile');
     const profileControls = document.getElementById('profileControls');
@@ -375,7 +421,10 @@
       statusEl.textContent = `Capa ${layer} lista.`;
     }
 
-    chkCR3D.onchange = () => (tileGroups.visible = chkCR3D.checked);
+    chkCR3D.onchange = () => {
+      tileGroups.visible = chkCR3D.checked;
+      legendUI.style.display = chkCR3D.checked ? 'block' : 'none';
+    };
     chkSatellite.onchange = () => {
       tileGroups.children.forEach(mesh => {
         const mat = mesh.material;
