@@ -61,17 +61,7 @@
     #profileStats span { color: white; font-weight: bold; }
     
     .legend-panel {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      width: 220px;
-      background: var(--panel);
-      backdrop-filter: blur(12px);
-      padding: 15px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      z-index: 10;
+      margin-top: 15px;
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -90,8 +80,8 @@
     }
     .legend-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px 8px;
+      grid-template-columns: 1fr;
+      gap: 4px;
       margin-top: 5px;
     }
   </style>
@@ -122,28 +112,27 @@
           <button id="btnClearMeasure" style="margin-top:10px; background:#ef4444; font-size:11px;">Borrar Medición</button>
       </div>
 
-    </div>
-  </div>
-
-  <div id="legendUI" class="legend-panel">
-    <h2 style="font-size: 14px; margin-top: 10px;">Elevación</h2>
-    <div class="legend-grid">
-      <div class="legend-item"><div class="color-box" style="background: #87CEEB;"></div> Océano</div>
-      <div class="legend-item"><div class="color-box" style="background: #002600;"></div> < 0 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #99e699;"></div> 0 - 5 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #4db34d;"></div> 5 - 10 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #1a801a;"></div> 10 - 25 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #66991a;"></div> 25 - 50 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #b3cc33;"></div> 50 - 100 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #e6e666;"></div> 100 - 250 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #ffff00;"></div> 250 - 500 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #ffbf00;"></div> 500 - 750 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #ff9900;"></div> 750 - 1000 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #cc8033;"></div> 1000 - 1500 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #996633;"></div> 1500 - 2000 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #66401a;"></div> 2000 - 2500 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #40260d;"></div> 2500 - 3000 m</div>
-      <div class="legend-item"><div class="color-box" style="background: #ffffff;"></div> > 3000 m</div>
+      <div id="legendUI" class="legend-panel">
+        <h2 style="font-size: 14px; margin-top: 10px;">Elevación</h2>
+        <div class="legend-grid">
+          <div class="legend-item"><div class="color-box" style="background: #87CEEB;"></div> Océano</div>
+          <div class="legend-item"><div class="color-box" style="background: #002600;"></div> < 0 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #99e699;"></div> 0 - 5 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #4db34d;"></div> 5 - 10 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #1a801a;"></div> 10 - 25 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #66991a;"></div> 25 - 50 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #b3cc33;"></div> 50 - 100 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #e6e666;"></div> 100 - 250 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #ffff00;"></div> 250 - 500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #ffbf00;"></div> 500 - 750 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #ff9900;"></div> 750 - 1000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #cc8033;"></div> 1000 - 1500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #996633;"></div> 1500 - 2000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #66401a;"></div> 2000 - 2500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #40260d;"></div> 2500 - 3000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #ffffff;"></div> > 3000 m</div>
+        </div>
+      </div>
     </div>
   </div>
 
