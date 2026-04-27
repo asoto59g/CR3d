@@ -80,8 +80,10 @@
     }
     .legend-grid {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 4px;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(8, auto);
+      grid-auto-flow: column;
+      gap: 4px 12px;
       margin-top: 5px;
     }
   </style>
