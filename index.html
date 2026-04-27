@@ -614,7 +614,14 @@
         return;
       }
 
-      statusEl.textContent = 'Activando GPS...';
+      if (!window.isSecureContext) {
+        statusEl.textContent = 'Error: GPS requiere HTTPS en móviles.';
+        alert("La geolocalización requiere una conexión segura (HTTPS). En móviles, el GPS no funcionará bajo HTTP.");
+        gpsBtn.classList.remove('active');
+        return;
+      }
+
+      statusEl.textContent = 'Buscando satélites...';
       gpsBtn.classList.add('active');
 
       gpsWatchId = navigator.geolocation.watchPosition((pos) => {
@@ -633,7 +640,7 @@
         gpsMarker.position.set(mapX, mapY, mapZ);
         gpsMarker.visible = true;
         
-        statusEl.textContent = `Ubicación: ${lat.toFixed(5)}, ${lon.toFixed(5)} | Altitud: ${Math.round(h)}m`;
+        statusEl.textContent = `GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)} (±${Math.round(pos.coords.accuracy)}m)`;
 
         // Centrar cámara si es la primera vez o está lejos
         if (gpsMarker.userData.firstTime !== false) {
@@ -642,14 +649,20 @@
             gpsMarker.userData.firstTime = false;
         }
       }, (err) => {
-        console.error(err);
-        statusEl.textContent = 'Error al obtener ubicación.';
+        let msg = "Error de ubicación.";
+        if (err.code === 1) msg = "Permiso denegado por el usuario.";
+        else if (err.code === 2) msg = "Posición no disponible.";
+        else if (err.code === 3) msg = "Tiempo de espera agotado.";
+        
+        statusEl.textContent = msg;
+        console.error("GPS Error:", err);
         gpsBtn.classList.remove('active');
+        navigator.geolocation.clearWatch(gpsWatchId);
         gpsWatchId = null;
       }, {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        timeout: 15000,
+        maximumAge: 5000
       });
     };
 
