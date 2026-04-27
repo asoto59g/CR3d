@@ -86,6 +86,18 @@
       gap: 4px 12px;
       margin-top: 5px;
     }
+    
+    #gpsBtn {
+      position: absolute; top: 20px; right: 20px; z-index: 100;
+      background: var(--panel); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 10px; width: 44px; height: 44px; display: flex;
+      align-items: center; justify-content: center; cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: 0.3s;
+    }
+    #gpsBtn:hover { background: #334155; transform: scale(1.05); }
+    #gpsBtn.active { background: var(--accent); color: #0f172a; }
+    #gpsBtn svg { width: 24px; height: 24px; fill: currentColor; }
   </style>
 </head>
 <body>
@@ -152,6 +164,9 @@
     <canvas id="profileCanvas"></canvas>
   </div>
 
+  <div id="gpsBtn" title="Mi ubicación">
+    <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+  </div>
   <div id="status">Iniciando...</div>
   <div id="tooltip"></div>
 
@@ -185,6 +200,7 @@
     const btnClearProfileMain = document.getElementById('btnClearProfileMain');
     const btnResetProfile = document.getElementById('btnResetProfile');
     const profileControls = document.getElementById('profileControls');
+    const gpsBtn = document.getElementById('gpsBtn');
 
     // Configuración Base
     const scene = new THREE.Scene();
@@ -373,6 +389,22 @@
     );
     profileMarker.visible = false;
     scene.add(profileMarker);
+
+    // --- Marcador de GPS ---
+    const gpsMarker = new THREE.Group();
+    const gpsDot = new THREE.Mesh(
+      new THREE.SphereGeometry(1.5, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    const gpsRing = new THREE.Mesh(
+      new THREE.RingGeometry(2, 3, 32),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+    );
+    gpsRing.rotation.x = -Math.PI/2;
+    gpsMarker.add(gpsDot, gpsRing);
+    gpsMarker.visible = false;
+    scene.add(gpsMarker);
+    let gpsWatchId = null;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -564,6 +596,61 @@
       clearProfile();
       profilePanel.style.display = 'none';
       profileControls.style.display = 'none';
+    };
+
+    // --- LÓGICA DE GPS ---
+    gpsBtn.onclick = () => {
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+        gpsMarker.visible = false;
+        gpsBtn.classList.remove('active');
+        statusEl.textContent = 'GPS desactivado.';
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        alert("Tu navegador no soporta geolocalización.");
+        return;
+      }
+
+      statusEl.textContent = 'Activando GPS...';
+      gpsBtn.classList.add('active');
+
+      gpsWatchId = navigator.geolocation.watchPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        
+        // Conversión Lat/Lon a Web Mercator (EPSG:3857)
+        const x = lon * MERC_LIMIT / 180;
+        const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * (MERC_LIMIT / 180);
+        
+        const h = getElevationAt(x, y);
+        const mapX = (x - centerX) * scale;
+        const mapZ = -(y - centerY) * scale;
+        const mapY = (h * scale * zExag) + 2;
+
+        gpsMarker.position.set(mapX, mapY, mapZ);
+        gpsMarker.visible = true;
+        
+        statusEl.textContent = `Ubicación: ${lat.toFixed(5)}, ${lon.toFixed(5)} | Altitud: ${Math.round(h)}m`;
+
+        // Centrar cámara si es la primera vez o está lejos
+        if (gpsMarker.userData.firstTime !== false) {
+            camera.position.set(mapX, mapY + 200, mapZ + 200);
+            controls.target.set(mapX, mapY, mapZ);
+            gpsMarker.userData.firstTime = false;
+        }
+      }, (err) => {
+        console.error(err);
+        statusEl.textContent = 'Error al obtener ubicación.';
+        gpsBtn.classList.remove('active');
+        gpsWatchId = null;
+      }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
     };
 
     function updateMeasurements() {

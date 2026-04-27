@@ -1,7 +1,5 @@
 # Visor 3D Costa Rica - Premium
 
-Visor geografico en siguiente link:  https://asoto59g.github.io/CR3d/
-
 Este repositorio contiene las herramientas de procesamiento y el visor web interactivo diseñado para visualizar un modelo 3D de alta fidelidad del relieve topográfico de Costa Rica. Utilizando un Modelo de Elevación Digital (DEM) y capas vectoriales optimizadas mediante teselas (tiling), se logra una renderización fluida y profesional en el navegador mediante **Three.js**.
 
 ## Características Principales
@@ -13,6 +11,7 @@ Este repositorio contiene las herramientas de procesamiento y el visor web inter
 *   **Perfil Topográfico en Tiempo Real:** Herramienta interactiva para trazar trayectorias y generar un gráfico de perfil de elevación con estadísticas de altitud máxima, mínima y distancia total.
 *   **Alineación Topográfica (Vector Draping):** Las capas de poblados, carreteras y ríos se ajustan automáticamente a la altura del terreno cargado, garantizando una superposición espacial perfecta.
 *   **Interactividad y Consultas:** Uso de *Raycasting* para identificar nombres de poblaciones y consultar altitudes exactas mediante tooltips dinámicos.
+*   **Rastreo GPS en Tiempo Real:** Botón dedicado para activar la geolocalización del dispositivo, permitiendo al usuario visualizar su posición actual sobre el modelo 3D con actualización constante.
 
 ## Estructura de Datos
 
