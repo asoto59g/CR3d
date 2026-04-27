@@ -67,6 +67,7 @@
     <div class="panel">
       <h2>Visor 3D CR</h2>
       <div class="layer-item"><input type="checkbox" id="chkCR3D" checked> ⛰️ Relieve 3D (CR3D)</div>
+      <div class="layer-item"><input type="checkbox" id="chkSatellite"> 🌍 Google Satélite</div>
       <div class="layer-item"><input type="checkbox" id="chkPoblados"> 🏘️ Poblados</div>
       <div class="layer-item"><input type="checkbox" id="chkCaminos"> 🛣️ Carreteras</div>
       <div class="layer-item"><input type="checkbox" id="chkRios"> 💧 Ríos</div>
@@ -127,6 +128,7 @@
     const btnCloseProfile = document.getElementById('btnCloseProfile');
 
     const chkCR3D = document.getElementById('chkCR3D');
+    const chkSatellite = document.getElementById('chkSatellite');
     const chkPoblados = document.getElementById('chkPoblados');
     const chkCaminos = document.getElementById('chkCaminos');
     const chkRios = document.getElementById('chkRios');
@@ -258,14 +260,28 @@
           geom.computeBoundingBox();
           geom.computeBoundingSphere();
 
-          const mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ 
-            vertexColors: true,
+          const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: !chkSatellite.checked,
             roughness: 0.8,
             metalness: 0.1
-          }));
+          });
+          const mesh = new THREE.Mesh(geom, material);
           mesh.rotation.x = -Math.PI/2;
           mesh.position.set((midX - centerX)*scale, 0, -(midY - centerY)*scale);
           tileGroups.add(mesh);
+
+          // Cargar textura satelital de Google
+          const texLoader = new THREE.TextureLoader();
+          texLoader.setCrossOrigin('anonymous');
+          texLoader.load(`https://mt1.google.com/vt/lyrs=y&x=${x}&y=${y}&z=${z}`, (tex) => {
+            mesh.userData.satelliteTex = tex;
+            if (chkSatellite.checked) {
+              material.map = tex;
+              material.vertexColors = false;
+              material.needsUpdate = true;
+            }
+          });
+
           resolve(true);
         };
         img.onerror = () => resolve(false);
@@ -354,6 +370,19 @@
     }
 
     chkCR3D.onchange = () => (tileGroups.visible = chkCR3D.checked);
+    chkSatellite.onchange = () => {
+      tileGroups.children.forEach(mesh => {
+        const mat = mesh.material;
+        if (chkSatellite.checked && mesh.userData.satelliteTex) {
+          mat.map = mesh.userData.satelliteTex;
+          mat.vertexColors = false;
+        } else {
+          mat.map = null;
+          mat.vertexColors = true;
+        }
+        mat.needsUpdate = true;
+      });
+    };
     chkPoblados.onchange = () => chkPoblados.checked ? loadVectorLayer('poblados') : (vectorGroups.poblados.visible = false);
     chkCaminos.onchange = () => chkCaminos.checked ? loadVectorLayer('carreteras') : (vectorGroups.carreteras.visible = false);
     chkRios.onchange = () => chkRios.checked ? loadVectorLayer('rios') : (vectorGroups.rios.visible = false);
