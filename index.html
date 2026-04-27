@@ -599,6 +599,59 @@
     };
 
     // --- LÓGICA DE GPS ---
+    function startGPS(highAccuracy = true) {
+      if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+
+      const options = {
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 20000 : 10000,
+        maximumAge: 10000
+      };
+
+      statusEl.textContent = highAccuracy ? 'Buscando satélites (Alta Precisión)...' : 'Buscando ubicación (Modo Ahorro)...';
+      
+      gpsWatchId = navigator.geolocation.watchPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy);
+        
+        const x = lon * MERC_LIMIT / 180;
+        const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * (MERC_LIMIT / 180);
+        
+        const h = getElevationAt(x, y);
+        const mapX = (x - centerX) * scale;
+        const mapZ = -(y - centerY) * scale;
+        const mapY = (h * scale * zExag) + 2;
+
+        gpsMarker.position.set(mapX, mapY, mapZ);
+        gpsMarker.visible = true;
+        
+        statusEl.textContent = `GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)} (±${acc}m)`;
+
+        if (gpsMarker.userData.firstTime !== false) {
+            camera.position.set(mapX, mapY + 200, mapZ + 200);
+            controls.target.set(mapX, mapY, mapZ);
+            gpsMarker.userData.firstTime = false;
+        }
+      }, (err) => {
+        if (highAccuracy && err.code === 3) {
+          console.warn("Alta precisión agotada. Reintentando con precisión estándar...");
+          startGPS(false); // Reintentar con precisión baja
+          return;
+        }
+
+        let msg = "Error de ubicación.";
+        if (err.code === 1) msg = "Permiso denegado.";
+        else if (err.code === 2) msg = "Posición no disponible.";
+        else if (err.code === 3) msg = "Tiempo de espera agotado.";
+        
+        statusEl.textContent = msg;
+        gpsBtn.classList.remove('active');
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }, options);
+    }
+
     gpsBtn.onclick = () => {
       if (gpsWatchId !== null) {
         navigator.geolocation.clearWatch(gpsWatchId);
@@ -615,55 +668,15 @@
       }
 
       if (!window.isSecureContext) {
-        statusEl.textContent = 'Error: GPS requiere HTTPS en móviles.';
-        alert("La geolocalización requiere una conexión segura (HTTPS). En móviles, el GPS no funcionará bajo HTTP.");
+        statusEl.textContent = 'Error: GPS requiere HTTPS.';
+        alert("La geolocalización requiere una conexión segura (HTTPS).");
         gpsBtn.classList.remove('active');
         return;
       }
 
-      statusEl.textContent = 'Buscando satélites...';
       gpsBtn.classList.add('active');
-
-      gpsWatchId = navigator.geolocation.watchPosition((pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        
-        // Conversión Lat/Lon a Web Mercator (EPSG:3857)
-        const x = lon * MERC_LIMIT / 180;
-        const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * (MERC_LIMIT / 180);
-        
-        const h = getElevationAt(x, y);
-        const mapX = (x - centerX) * scale;
-        const mapZ = -(y - centerY) * scale;
-        const mapY = (h * scale * zExag) + 2;
-
-        gpsMarker.position.set(mapX, mapY, mapZ);
-        gpsMarker.visible = true;
-        
-        statusEl.textContent = `GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)} (±${Math.round(pos.coords.accuracy)}m)`;
-
-        // Centrar cámara si es la primera vez o está lejos
-        if (gpsMarker.userData.firstTime !== false) {
-            camera.position.set(mapX, mapY + 200, mapZ + 200);
-            controls.target.set(mapX, mapY, mapZ);
-            gpsMarker.userData.firstTime = false;
-        }
-      }, (err) => {
-        let msg = "Error de ubicación.";
-        if (err.code === 1) msg = "Permiso denegado por el usuario.";
-        else if (err.code === 2) msg = "Posición no disponible.";
-        else if (err.code === 3) msg = "Tiempo de espera agotado.";
-        
-        statusEl.textContent = msg;
-        console.error("GPS Error:", err);
-        gpsBtn.classList.remove('active');
-        navigator.geolocation.clearWatch(gpsWatchId);
-        gpsWatchId = null;
-      }, {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 5000
-      });
+      gpsMarker.userData.firstTime = true;
+      startGPS(true);
     };
 
     function updateMeasurements() {
