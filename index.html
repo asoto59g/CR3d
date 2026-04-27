@@ -119,15 +119,18 @@
           <div class="legend-item"><div class="color-box" style="background: #0d3380;"></div> < 0 m</div>
           <div class="legend-item"><div class="color-box" style="background: #1a99cc;"></div> 0 m</div>
           <div class="legend-item"><div class="color-box" style="background: #26804d;"></div> 0 - 5 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #0d591a;"></div> 5 - 10 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #145914;"></div> 5 - 10 m</div>
           <div class="legend-item"><div class="color-box" style="background: #054005;"></div> 10 - 25 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #145914;"></div> 25 - 50 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #26731e;"></div> 50 - 100 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #809940;"></div> 100 - 1000 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #a68c4d;"></div> 1000 - 1500 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #8c7340;"></div> 1500 - 2000 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #806140;"></div> 2000 - 2500 m</div>
-          <div class="legend-item"><div class="color-box" style="background: #73594d;"></div> 2500 - 3000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #2b6e15;"></div> 25 - 50 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #6a9c1c;"></div> 50 - 100 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #a8c221;"></div> 100 - 250 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #d4db25;"></div> 250 - 500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #f5e63d;"></div> 500 - 750 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #f5c23d;"></div> 750 - 1000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #d49435;"></div> 1000 - 1500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #a6732e;"></div> 1500 - 2000 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #805526;"></div> 2000 - 2500 m</div>
+          <div class="legend-item"><div class="color-box" style="background: #63401d;"></div> 2500 - 3000 m</div>
           <div class="legend-item"><div class="color-box" style="background: #999999;"></div> > 3000 m</div>
         </div>
       </div>
@@ -273,37 +276,46 @@
               // 2. Costa/Playa
               colors[i*3] = 0.1; colors[i*3+1] = 0.6; colors[i*3+2] = 0.8;
             } else if (h < 5) {
-              // 3. Nivel Muy Bajo (0-5m)
+              // 3. Nivel Muy Bajo (0-5m) - Verde Azulado
               colors[i*3] = 0.15; colors[i*3+1] = 0.5; colors[i*3+2] = 0.3;
             } else if (h < 10) {
-              // 4. Nivel Bajo (5-10m)
-              colors[i*3] = 0.05; colors[i*3+1] = 0.35; colors[i*3+2] = 0.1;
+              // 4. Nivel Bajo (5-10m) - Verde Esmeralda
+              colors[i*3] = 0.08; colors[i*3+1] = 0.35; colors[i*3+2] = 0.08;
             } else if (h < 25) {
-              // 5. Zona inmediata costa (10-25m)
+              // 5. Zona inmediata costa (10-25m) - Verde Profundo
               colors[i*3] = 0.02; colors[i*3+1] = 0.25; colors[i*3+2] = 0.02;
             } else if (h < 50) {
-              // 6. Llanuras muy bajas (25-50m)
-              colors[i*3] = 0.08; colors[i*3+1] = 0.35; colors[i*3+2] = 0.08;
+              // 6. Llanuras muy bajas (25-50m) - Verde Oliva
+              colors[i*3] = 0.17; colors[i*3+1] = 0.43; colors[i*3+2] = 0.08;
             } else if (h < 100) {
-              // 7. Llanuras medias (50-100m)
-              colors[i*3] = 0.15; colors[i*3+1] = 0.45; colors[i*3+2] = 0.12;
+              // 7. Llanuras medias (50-100m) - Verde Lima
+              colors[i*3] = 0.42; colors[i*3+1] = 0.61; colors[i*3+2] = 0.11;
+            } else if (h < 250) {
+              // 8. Valles Bajos (100-250m) - Lima Amarillento
+              colors[i*3] = 0.66; colors[i*3+1] = 0.76; colors[i*3+2] = 0.13;
+            } else if (h < 500) {
+              // 9. Valles Medios (250-500m) - Amarillo Verdoso
+              colors[i*3] = 0.83; colors[i*3+1] = 0.86; colors[i*3+2] = 0.15;
+            } else if (h < 750) {
+              // 10. Valles Altos (500-750m) - Amarillo Intenso
+              colors[i*3] = 0.96; colors[i*3+1] = 0.9; colors[i*3+2] = 0.24;
             } else if (h < 1000) {
-              // 8. Valles Altos
-              colors[i*3] = 0.5; colors[i*3+1] = 0.6; colors[i*3+2] = 0.25;
+              // 11. Tierras de Transición (750-1000m) - Ocre/Ámbar
+              colors[i*3] = 0.96; colors[i*3+1] = 0.76; colors[i*3+2] = 0.24;
             } else if (h < 1500) {
-              // 9. Tierras Altas
-              colors[i*3] = 0.65; colors[i*3+1] = 0.55; colors[i*3+2] = 0.3;
+              // 12. Tierras Altas I (1000-1500m) - Café Claro
+              colors[i*3] = 0.83; colors[i*3+1] = 0.58; colors[i*3+2] = 0.21;
             } else if (h < 2000) {
-              // 10. Montaña (1500-2000m)
-              colors[i*3] = 0.55; colors[i*3+1] = 0.45; colors[i*3+2] = 0.25;
+              // 13. Montaña (1500-2000m) - Café Medio
+              colors[i*3] = 0.65; colors[i*3+1] = 0.45; colors[i*3+2] = 0.18;
             } else if (h < 2500) {
-              // 11. Alta Montaña I (2000-2500m)
-              colors[i*3] = 0.5; colors[i*3+1] = 0.38; colors[i*3+2] = 0.25;
+              // 14. Alta Montaña I (2000-2500m) - Café Oscuro
+              colors[i*3] = 0.5; colors[i*3+1] = 0.33; colors[i*3+2] = 0.15;
             } else if (h < 3000) {
-              // 12. Alta Montaña II (2500-3000m)
-              colors[i*3] = 0.45; colors[i*3+1] = 0.35; colors[i*3+2] = 0.3;
+              // 15. Alta Montaña II (2500-3000m) - Café Profundo
+              colors[i*3] = 0.39; colors[i*3+1] = 0.25; colors[i*3+2] = 0.11;
             } else {
-              // 13. Cumbres Máximas (>3000m)
+              // 16. Cumbres Máximas (>3000m) - Gris/Ceniza
               colors[i*3] = 0.6; colors[i*3+1] = 0.6; colors[i*3+2] = 0.6;
             }
           }
