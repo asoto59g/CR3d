@@ -1,0 +1,26 @@
+# Archivos de datos pesados (No subir a GitHub)
+*.tif
+*.zip
+*.gpkg
+*.qgz
+*.wld
+*.aux.xml
+*.shp
+*.shx
+*.prj
+*.qmd
+
+# Carpetas de datos originales y pesados
+data/
+ruta/
+modules/
+
+# Entornos virtuales y configuración de herramientas
+.venv/
+.continue/
+.gemini/
+__pycache__/
+
+# Archivos de sistema
+Thumbs.db
+.DS_Store

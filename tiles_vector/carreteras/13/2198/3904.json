@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-9280066.730046678, 939102.6734599838], [-9280537.726160796, 939258.2035682462]]}, "properties": {"RUTA": "ND", "TIPO": "SENDERO", "LONGITUD": 7507.12, "DE_RUTA": "", "URBANOS": "", "DESCRIPCIO": ""}}]}

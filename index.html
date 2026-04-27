@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Visor 3D Costa Rica - Premium</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(30, 41, 59, 0.7);
+      --accent: #38bdf8;
+      --text: #f1f5f9;
+    }
+    body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--text); }
+    
+    #ui { position: absolute; top: 20px; left: 20px; z-index: 10; width: 280px; }
+    .panel { 
+      background: var(--panel); backdrop-filter: blur(12px); 
+      padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 15px;
+    }
+    h2 { margin: 0 0 15px 0; font-size: 18px; color: var(--accent); letter-spacing: -0.5px; }
+    .layer-item { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
+    .layer-item:hover { transform: translateX(5px); }
+    input[type="checkbox"] { margin-right: 12px; accent-color: var(--accent); width: 18px; height: 18px; }
+    
+    .tools { display: flex; gap: 10px; margin-top: 10px; }
+    button { 
+      flex: 1; background: #334155; border: none; color: white; padding: 10px; 
+      border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    button:hover { background: #475569; }
+    button.active { background: var(--accent); color: #0f172a; }
+    
+    #status { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+             background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 20px; font-size: 12px; pointer-events: none; }
+    
+    #tooltip { position: fixed; background: rgba(15, 23, 42, 0.9); padding: 8px 12px; border-radius: 8px; 
+              border: 1px solid var(--accent); font-size: 13px; display: none; pointer-events: none; z-index: 100; }
+
+    #measureResults { margin-top: 15px; font-size: 13px; display: none; }
+    .result-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
+    .result-row span { color: var(--accent); font-weight: bold; }
+
+    /* Perfil Panel */
+    #profilePanel {
+      position: fixed; bottom: 20px; left: 20px; right: 20px; height: 180px;
+      background: var(--panel); backdrop-filter: blur(12px); border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1); display: none; flex-direction: column; padding: 15px;
+      box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 20;
+    }
+    #profileHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    #profileHeader h3 { margin: 0; font-size: 14px; color: var(--accent); }
+    #profileCanvas { 
+      width: 100%; height: 100px; cursor: crosshair; 
+      background: #000; border: 1px solid #334155; display: block;
+    }
+    .close-profile { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 18px; }
+    .close-profile:hover { color: white; }
+    #profileStats { font-size: 11px; color: #94a3b8; display: flex; gap: 20px; }
+    #profileStats span { color: white; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div id="ui">
+    <div class="panel">
+      <h2>Visor 3D CR</h2>
+      <div class="layer-item"><input type="checkbox" id="chkPoblados"> 🏘️ Poblados</div>
+      <div class="layer-item"><input type="checkbox" id="chkCaminos"> 🛣️ Carreteras</div>
+      <div class="layer-item"><input type="checkbox" id="chkRios"> 💧 Ríos</div>
+      
+      <div class="tools">
+        <button id="btnMeasure" title="Medir distancia y área">📏 Medir</button>
+        <button id="btnProfile" title="Perfil de elevación">🏔️ Perfil</button>
+      </div>
+
+      <div id="profileControls" style="display:none; margin-top:10px;">
+          <button id="btnClearProfileMain" style="background:#ef4444; font-size:11px; width:100%;">Borrar Perfil</button>
+      </div>
+
+      <div id="measureResults">
+          <div class="result-row">Distancia: <span id="distVal">0</span> m</div>
+          <div class="result-row">Área: <span id="areaVal">0</span> ha</div>
+          <button id="btnClearMeasure" style="margin-top:10px; background:#ef4444; font-size:11px;">Borrar Medición</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profilePanel">
+    <div id="profileHeader">
+      <h3>Perfil Topográfico</h3>
+      <div id="profileStats">
+          <div>Máx: <span id="maxElev">0</span>m</div>
+          <div>Mín: <span id="minElev">0</span>m</div>
+          <div>Distancia: <span id="profDist">0</span>m</div>
+          <button id="btnResetProfile" style="background:#475569; border:none; color:white; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:10px; margin-left:10px;">Reiniciar</button>
+      </div>
+      <button class="close-profile" id="btnCloseProfile">×</button>
+    </div>
+    <canvas id="profileCanvas"></canvas>
+  </div>
+
+  <div id="status">Iniciando...</div>
+  <div id="tooltip"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const tooltipEl = document.getElementById('tooltip');
+    const btnMeasure = document.getElementById('btnMeasure');
+    const btnClearMeasure = document.getElementById('btnClearMeasure');
+    const measureResults = document.getElementById('measureResults');
+    const distVal = document.getElementById('distVal');
+    const areaVal = document.getElementById('areaVal');
+
+    const btnProfile = document.getElementById('btnProfile');
+    const profilePanel = document.getElementById('profilePanel');
+    const profileCanvas = document.getElementById('profileCanvas');
+    const maxElevEl = document.getElementById('maxElev');
+    const minElevEl = document.getElementById('minElev');
+    const profDistEl = document.getElementById('profDist');
+    const btnCloseProfile = document.getElementById('btnCloseProfile');
+
+    const chkPoblados = document.getElementById('chkPoblados');
+    const chkCaminos = document.getElementById('chkCaminos');
+    const chkRios = document.getElementById('chkRios');
+    const btnClearProfileMain = document.getElementById('btnClearProfileMain');
+    const btnResetProfile = document.getElementById('btnResetProfile');
+    const profileControls = document.getElementById('profileControls');
+
+    // Configuración Base
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100000);
+    camera.position.set(0, 500, 1000);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+    sun.position.set(500, 1000, 500);
+    scene.add(sun);
+
+    // Niebla Atmosférica
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.00015);
+
+    // Georeferencia
+    const centerX = -9373016;
+    const centerY = 1076231;
+    const scale = 1/500;
+    const zExag = 1.875; // Exageración vertical aumentada un 25%
+    const MERC_LIMIT = 20037508.342789244;
+
+    const tileGroups = new THREE.Group();
+    scene.add(tileGroups);
+    const vectorGroups = { poblados: new THREE.Group(), carreteras: new THREE.Group(), rios: new THREE.Group() };
+    Object.values(vectorGroups).forEach(g => scene.add(g));
+
+    const heightCache = {};
+
+    function getElevationAt(mx, my) {
+      const z = 10;
+      const size = (MERC_LIMIT * 2) / Math.pow(2, z);
+      const tx = Math.floor((mx + MERC_LIMIT) / size);
+      const ty = Math.floor((MERC_LIMIT - my) / size);
+      const pixels = heightCache[`${z}/${tx}/${ty}`];
+      if (!pixels) return 0;
+      
+      const xmin = -MERC_LIMIT + tx * size;
+      const ymax = MERC_LIMIT - ty * size;
+      const u = (mx - xmin) / size;
+      const v = (ymax - my) / size;
+      
+      const px = Math.max(0, Math.min(255, Math.floor(u * 255)));
+      const py = Math.max(0, Math.min(255, Math.floor(v * 255)));
+      const idx = (py * 256 + px) * 4;
+      const r = pixels[idx], g = pixels[idx+1], b = pixels[idx+2];
+      const h = (-10000 + (r * 65536 + g * 256 + b) * 0.1);
+      return (h < -500 || h > 4500 || h === 0) ? 0 : h;
+    }
+
+    async function loadTile(z, x, y) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = `./tiles/${z}/${x}/${y}.png`;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 256; canvas.height = 256;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const data = ctx.getImageData(0, 0, 256, 256).data;
+          heightCache[`${z}/${x}/${y}`] = data;
+
+          const size = (MERC_LIMIT * 2) / Math.pow(2, z);
+          const midX = -MERC_LIMIT + (x + 0.5) * size;
+          const midY = MERC_LIMIT - (y + 0.5) * size;
+          
+          // Resolución aumentada a 128x128
+          const geom = new THREE.PlaneGeometry(size*scale, size*scale, 128, 128);
+          const pos = geom.attributes.position;
+          const colors = new Float32Array(pos.count * 3);
+
+          for (let i = 0; i < pos.count; i++) {
+            const vx = (pos.getX(i) / scale) + midX;
+            const vy = (pos.getY(i) / scale) + midY;
+            const h = getElevationAt(vx, vy);
+            pos.setZ(i, h * scale * zExag);
+            
+            if (h < 0) {
+              // 1. Mar Profundo
+              colors[i*3] = 0.05; colors[i*3+1] = 0.2; colors[i*3+2] = 0.5;
+            } else if (h === 0) {
+              // 2. Costa/Playa
+              colors[i*3] = 0.1; colors[i*3+1] = 0.6; colors[i*3+2] = 0.8;
+            } else if (h < 25) {
+              // 3. Zona inmediata costa (0-25m)
+              colors[i*3] = 0.02; colors[i*3+1] = 0.25; colors[i*3+2] = 0.02;
+            } else if (h < 50) {
+              // 4. Llanuras muy bajas (25-50m)
+              colors[i*3] = 0.08; colors[i*3+1] = 0.35; colors[i*3+2] = 0.08;
+            } else if (h < 100) {
+              // 5. Llanuras medias (50-100m)
+              colors[i*3] = 0.15; colors[i*3+1] = 0.45; colors[i*3+2] = 0.12;
+            } else if (h < 1000) {
+              // 6. Valles Altos
+              colors[i*3] = 0.5; colors[i*3+1] = 0.6; colors[i*3+2] = 0.25;
+            } else if (h < 1500) {
+              // 7. Tierras Altas
+              colors[i*3] = 0.65; colors[i*3+1] = 0.55; colors[i*3+2] = 0.3;
+            } else if (h < 2000) {
+              // 8. Montaña (1500-2000m)
+              colors[i*3] = 0.55; colors[i*3+1] = 0.45; colors[i*3+2] = 0.25;
+            } else if (h < 2500) {
+              // 9. Alta Montaña I (2000-2500m)
+              colors[i*3] = 0.5; colors[i*3+1] = 0.38; colors[i*3+2] = 0.25;
+            } else if (h < 3000) {
+              // 10. Alta Montaña II (2500-3000m)
+              colors[i*3] = 0.45; colors[i*3+1] = 0.35; colors[i*3+2] = 0.3;
+            } else {
+              // 11. Cumbres Máximas (>3000m)
+              colors[i*3] = 0.6; colors[i*3+1] = 0.6; colors[i*3+2] = 0.6;
+            }
+          }
+          geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+          geom.computeVertexNormals();
+          geom.computeBoundingBox();
+          geom.computeBoundingSphere();
+
+          const mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ 
+            vertexColors: true,
+            roughness: 0.8,
+            metalness: 0.1
+          }));
+          mesh.rotation.x = -Math.PI/2;
+          mesh.position.set((midX - centerX)*scale, 0, -(midY - centerY)*scale);
+          tileGroups.add(mesh);
+          resolve(true);
+        };
+        img.onerror = () => resolve(false);
+      });
+    }
+
+    // --- ESTADO GLOBAL DE HERRAMIENTAS ---
+    let isMeasuring = false;
+    let isProfiling = false;
+    let measurePoints = [];
+    let profilePoints = [];
+    let sampledElevations = [];
+    
+    const measureGroup = new THREE.Group();
+    const profileGroup = new THREE.Group();
+    scene.add(measureGroup, profileGroup);
+
+    let measureLine = null;
+    let profileLineObj = null;
+
+    const profileMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(2, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    );
+    profileMarker.visible = false;
+    scene.add(profileMarker);
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // --- Carga de Capas Vectoriales ---
+    async function loadVectorLayer(layer) {
+      if (vectorGroups[layer].children.length > 0) {
+        vectorGroups[layer].visible = true;
+        return;
+      }
+      
+      statusEl.textContent = `Cargando capa: ${layer}...`;
+      const zl = 10;
+      const sx = 267, ex = 277, sy = 479, ey = 489;
+      
+      for (let x = sx; x <= ex; x++) {
+        for (let y = sy; y <= ey; y++) {
+          try {
+            const res = await fetch(`./tiles_vector/${layer}/${zl}/${x}/${y}.json`);
+            if (!res.ok) continue;
+            const data = await res.json();
+            
+            data.features.forEach(f => {
+              if (f.geometry.type === "Point") {
+                const mx = f.geometry.coordinates[0];
+                const my = f.geometry.coordinates[1];
+                const h = getElevationAt(mx, my);
+                
+                const dot = new THREE.Mesh(
+                  new THREE.CircleGeometry(0.26, 16), // Tamaño reducido al 33% (radio 0.26)
+                  new THREE.MeshBasicMaterial({ 
+                    color: layer === 'poblados' ? 0xffffff : 0xaaaaaa,
+                    side: THREE.DoubleSide 
+                  })
+                );
+                dot.rotation.x = -Math.PI / 2; // Orientar horizontalmente
+                dot.position.set((mx - centerX)*scale, (h * scale * zExag) + 0.05, -(my - centerY)*scale);
+                dot.userData = { nombre: f.properties.NOMBRE || layer, altitud: h };
+                vectorGroups[layer].add(dot);
+              } else if (f.geometry.type === "LineString" || f.geometry.type === "MultiLineString") {
+                const lines = f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.coordinates;
+                lines.forEach(line => {
+                  const pts = line.map(p => {
+                    const h = getElevationAt(p[0], p[1]);
+                    return new THREE.Vector3((p[0] - centerX)*scale, (h * scale * zExag) + 0.1, -(p[1] - centerY)*scale);
+                  });
+                  const geom = new THREE.BufferGeometry().setFromPoints(pts);
+                  const mat = new THREE.LineBasicMaterial({ 
+                    color: layer === 'rios' ? 0x1e3a8a : 0x78350f,
+                    linewidth: 2 
+                  });
+                  vectorGroups[layer].add(new THREE.Line(geom, mat));
+                });
+              }
+            });
+          } catch(e) {}
+        }
+      }
+      statusEl.textContent = `Capa ${layer} lista.`;
+    }
+
+    chkPoblados.onchange = () => chkPoblados.checked ? loadVectorLayer('poblados') : (vectorGroups.poblados.visible = false);
+    chkCaminos.onchange = () => chkCaminos.checked ? loadVectorLayer('carreteras') : (vectorGroups.carreteras.visible = false);
+    chkRios.onchange = () => chkRios.checked ? loadVectorLayer('rios') : (vectorGroups.rios.visible = false);
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(vectorGroups.poblados.children, true);
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        tooltipEl.style.display = 'block';
+        tooltipEl.style.left = (e.clientX + 15) + 'px';
+        tooltipEl.style.top = (e.clientY + 15) + 'px';
+        tooltipEl.innerHTML = `<strong>${obj.userData.nombre}</strong><br>Altitud: ${Math.round(obj.userData.altitud)}m`;
+      } else {
+        tooltipEl.style.display = 'none';
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('#ui') || e.target.closest('#profilePanel')) return;
+      if (!isMeasuring && !isProfiling) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(tileGroups.children, true);
+      
+      if (intersects.length > 0) {
+        const p = intersects[0].point;
+        const pt = new THREE.Vector3(p.x, p.y + 0.5, p.z);
+        statusEl.textContent = `Punto fijado en mapa.`;
+
+        if (isMeasuring) {
+            measurePoints.push(pt);
+            const dot = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+            dot.position.copy(pt);
+            measureGroup.add(dot);
+            updateMeasurements();
+        } else if (isProfiling) {
+            profilePoints.push(pt);
+            const dot = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+            dot.position.copy(pt);
+            profileGroup.add(dot);
+            if (profilePoints.length >= 2) {
+              if (profileLineObj) profileGroup.remove(profileLineObj);
+              profileLineObj = new THREE.Line(new THREE.BufferGeometry().setFromPoints(profilePoints), new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 3 }));
+              profileGroup.add(profileLineObj);
+            }
+            updateProfileChart();
+        }
+      }
+    });
+
+    btnMeasure.onclick = () => {
+      isMeasuring = !isMeasuring;
+      isProfiling = false;
+      btnMeasure.classList.toggle('active', isMeasuring);
+      btnProfile.classList.remove('active');
+      profilePanel.style.display = 'none';
+      measureResults.style.display = isMeasuring ? 'block' : 'none';
+      renderer.domElement.style.cursor = isMeasuring ? 'crosshair' : 'default';
+      statusEl.textContent = isMeasuring ? 'Modo Medición activo.' : 'Listo.';
+    };
+
+    btnProfile.onclick = () => {
+      isProfiling = !isProfiling;
+      isMeasuring = false;
+      btnProfile.classList.toggle('active', isProfiling);
+      btnMeasure.classList.remove('active');
+      measureResults.style.display = 'none';
+      if (isProfiling) {
+          profilePanel.style.display = 'flex';
+          profileControls.style.display = 'block';
+          updateProfileChart();
+          statusEl.textContent = 'Modo Perfil activo. Haz clic en el terreno.';
+      } else {
+          profilePanel.style.display = 'none';
+          profileControls.style.display = 'none';
+          statusEl.textContent = 'Listo.';
+      }
+      renderer.domElement.style.cursor = isProfiling ? 'crosshair' : 'default';
+    };
+
+    function clearProfile() {
+      profilePoints = [];
+      sampledElevations = [];
+      while(profileGroup.children.length > 0) profileGroup.remove(profileGroup.children[0]);
+      profileLineObj = null;
+      profileMarker.visible = false;
+      updateProfileChart();
+      statusEl.textContent = 'Perfil reiniciado.';
+    }
+
+    btnClearProfileMain.onclick = clearProfile;
+    btnResetProfile.onclick = clearProfile;
+
+    btnClearMeasure.onclick = () => {
+      measurePoints = [];
+      while(measureGroup.children.length > 0) measureGroup.remove(measureGroup.children[0]);
+      measureLine = null;
+      distVal.textContent = '0';
+      areaVal.textContent = '0';
+      if (!isMeasuring) measureResults.style.display = 'none';
+    };
+
+    btnCloseProfile.onclick = () => {
+      isProfiling = false;
+      btnProfile.classList.remove('active');
+      clearProfile();
+      profilePanel.style.display = 'none';
+      profileControls.style.display = 'none';
+    };
+
+    function updateMeasurements() {
+      if (measureLine) measureGroup.remove(measureLine);
+      if (measurePoints.length > 1) {
+        measureLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(measurePoints), new THREE.LineBasicMaterial({ color: 0xffffff }));
+        measureGroup.add(measureLine);
+      }
+      let dist = 0;
+      for(let i=0; i<measurePoints.length-1; i++) dist += measurePoints[i].distanceTo(measurePoints[i+1]) * 500;
+      distVal.textContent = Math.round(dist).toLocaleString();
+      if (measurePoints.length > 2) {
+        let area = 0;
+        for (let i = 0; i < measurePoints.length; i++) {
+          const j = (i + 1) % measurePoints.length;
+          area += measurePoints[i].x * (-measurePoints[j].z) - measurePoints[j].x * (-measurePoints[i].z);
+        }
+        areaVal.textContent = (Math.abs(area) / 2 * 25).toFixed(2);
+      }
+    }
+
+    function updateProfileChart() {
+      profileCanvas.width = 1000;
+      profileCanvas.height = 150;
+      const ctx = profileCanvas.getContext('2d');
+      const w = 1000, h = 150;
+      const marginX = 60; // Margen generoso para etiquetas
+      const drawW = w - (marginX * 2);
+
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+
+      if (profilePoints.length < 2) {
+        ctx.fillStyle = "#fbbf24";
+        ctx.font = "20px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("HAZ CLIC EN EL MAPA PARA TRAZAR EL PERFIL", w/2, h/2);
+        return;
+      }
+
+      const numSamples = 100;
+      sampledElevations = [];
+      const accumDists = [0];
+      for (let i = 0; i < profilePoints.length - 1; i++) {
+        accumDists.push(accumDists[i] + profilePoints[i].distanceTo(profilePoints[i+1]));
+      }
+      const fullDist = accumDists[accumDists.length - 1];
+      profDistEl.textContent = Math.round(fullDist * 500).toLocaleString();
+
+      const samplerRaycaster = new THREE.Raycaster();
+      const downward = new THREE.Vector3(0, -1, 0);
+
+      for (let i = 0; i <= numSamples; i++) {
+        const t = i / numSamples;
+        const targetDist = t * fullDist;
+        let segIdx = 0;
+        while (segIdx < accumDists.length - 2 && accumDists[segIdx+1] < targetDist) segIdx++;
+        const segT = (targetDist - accumDists[segIdx]) / (accumDists[segIdx+1] - accumDists[segIdx] || 1);
+        const x = profilePoints[segIdx].x + (profilePoints[segIdx+1].x - profilePoints[segIdx].x) * segT;
+        const z = profilePoints[segIdx].z + (profilePoints[segIdx+1].z - profilePoints[segIdx].z) * segT;
+        
+        samplerRaycaster.set(new THREE.Vector3(x, 10000, z), downward);
+        const intersects = samplerRaycaster.intersectObject(tileGroups, true);
+        let elev = (intersects.length > 0) ? intersects[0].point.y / (scale * zExag) : getElevationAt((x/scale)+centerX, -(z/scale)+centerY);
+        sampledElevations.push({ x, z, elev });
+      }
+
+      const elevations = sampledElevations.map(s => s.elev);
+      const maxE = Math.max(...elevations);
+      const minE = Math.min(...elevations);
+      const range = (maxE - minE) || 100;
+
+      ctx.strokeStyle = (maxE === 0) ? "#ef4444" : "#fbbf24";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      for (let i = 0; i < elevations.length; i++) {
+        const px = marginX + (i / numSamples) * drawW;
+        const py = 130 - ((elevations[i] - minE) / range) * 110;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      
+      maxElevEl.textContent = Math.round(maxE);
+      minElevEl.textContent = Math.round(minE);
+
+      // --- DIBUJAR CUADRÍCULA (GRID) ---
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.lineWidth = 1;
+      ctx.font = "9px sans-serif";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+
+      // Líneas Verticales cada 5 km (10 unidades)
+      for (let d = 0; d <= fullDist; d += 10) {
+          const px = marginX + (d / fullDist) * drawW;
+          ctx.beginPath();
+          ctx.moveTo(px, 10);
+          ctx.lineTo(px, 140);
+          ctx.stroke();
+          ctx.textAlign = "center";
+          ctx.fillText(`${Math.round(d * 0.5)}km`, px, 148);
+      }
+
+      // Líneas Horizontales cada 500m de elevación
+      const startH = Math.ceil(minE / 500) * 500;
+      for (let eh = startH; eh <= maxE; eh += 500) {
+          const py = 130 - ((eh - minE) / range) * 110;
+          ctx.beginPath();
+          ctx.moveTo(marginX, py);
+          ctx.lineTo(w - marginX, py);
+          ctx.stroke();
+          ctx.textAlign = "right";
+          ctx.fillText(`${eh}m`, marginX - 10, py + 3);
+      }
+      ctx.setLineDash([]);
+
+      // --- DIBUJAR ETIQUETAS PARA PUNTOS MARCADOS (Vértices) ---
+      profilePoints.forEach((pt, i) => {
+          const ratio = accumDists[i] / (fullDist || 1);
+          const px = marginX + ratio * drawW;
+          const elev = pt.y / (scale * zExag);
+          const py = 130 - ((elev - minE) / range) * 110;
+          
+          // Punto en el vértice (más pequeño)
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(px, py, 2.5, 0, Math.PI*2);
+          ctx.fill();
+          
+          // Texto de elevación (más pequeño)
+          ctx.fillStyle = "#fbbf24";
+          ctx.font = "bold 9px sans-serif";
+          if (i === 0) ctx.textAlign = "left";
+          else if (i === profilePoints.length - 1) ctx.textAlign = "right";
+          else ctx.textAlign = "center";
+          
+          ctx.fillText(`${Math.round(elev)}m`, px, py - 8);
+      });
+
+      if (maxE === 0) {
+        ctx.fillStyle = "#ef4444";
+        ctx.font = "14px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText("TERRENO NO DETECTADO", 20, 30);
+      }
+    }
+
+    profileCanvas.onmousemove = (e) => {
+      if (sampledElevations.length === 0) return;
+      const rect = profileCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (profileCanvas.width / rect.width);
+      const t = Math.max(0, Math.min(1, x / profileCanvas.width));
+      const idx = Math.floor(t * (sampledElevations.length - 1));
+      const s = sampledElevations[idx];
+      profileMarker.visible = true;
+      profileMarker.position.set(s.x, (s.elev * scale * 1.5) + 5, s.z);
+    };
+    profileCanvas.onmouseleave = () => { profileMarker.visible = false; };
+
+    async function init() {
+        statusEl.textContent = 'Cargando terreno...';
+        const zl = 10;
+        const sx = 267, ex = 277, sy = 479, ey = 489;
+        const loadPromises = [];
+        for (let x = sx; x <= ex; x++) {
+            for (let y = sy; y <= ey; y++) {
+                loadPromises.push(loadTile(zl, x, y));
+            }
+        }
+        await Promise.all(loadPromises);
+        if (chkPoblados.checked) loadVectorLayer('poblados');
+        if (chkCaminos.checked) loadVectorLayer('carreteras');
+        if (chkRios.checked) loadVectorLayer('rios');
+        statusEl.textContent = 'Terreno listo.';
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    init();
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

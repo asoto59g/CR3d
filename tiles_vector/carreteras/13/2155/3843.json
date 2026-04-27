@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-9495157.345584463, 1232776.3921833225], [-9495094.810251096, 1232850.8799304697], [-9494990.567487484, 1233007.9510703646]]}, "properties": {"RUTA": "ND", "TIPO": "VECINAL", "LONGITUD": 736.97, "DE_RUTA": "", "URBANOS": "", "DESCRIPCIO": ""}}]}
