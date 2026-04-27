@@ -601,20 +601,21 @@
     // --- LÓGICA DE GPS ---
     function startGPS(highAccuracy = true) {
       if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
-
+      
       const options = {
         enableHighAccuracy: highAccuracy,
-        timeout: highAccuracy ? 20000 : 10000,
-        maximumAge: 10000
+        timeout: 30000,
+        maximumAge: 30000
       };
 
-      statusEl.textContent = highAccuracy ? 'Buscando satélites (Alta Precisión)...' : 'Buscando ubicación (Modo Ahorro)...';
+      statusEl.textContent = highAccuracy ? 'Buscando satélites (Alta Precisión)...' : 'Buscando ubicación (Modo Celular/WiFi)...';
       
-      gpsWatchId = navigator.geolocation.watchPosition((pos) => {
+      const onUpdate = (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         const acc = Math.round(pos.coords.accuracy);
         
+        // Conversión a Web Mercator
         const x = lon * MERC_LIMIT / 180;
         const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * (MERC_LIMIT / 180);
         
@@ -626,30 +627,36 @@
         gpsMarker.position.set(mapX, mapY, mapZ);
         gpsMarker.visible = true;
         
-        statusEl.textContent = `GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)} (±${acc}m)`;
+        statusEl.textContent = `📍 GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)} (±${acc}m)${h === 0 ? ' [Fuera de zona DEM]' : ''}`;
 
         if (gpsMarker.userData.firstTime !== false) {
-            camera.position.set(mapX, mapY + 200, mapZ + 200);
+            camera.position.set(mapX, mapY + 300, mapZ + 300);
             controls.target.set(mapX, mapY, mapZ);
             gpsMarker.userData.firstTime = false;
         }
-      }, (err) => {
-        if (highAccuracy && err.code === 3) {
-          console.warn("Alta precisión agotada. Reintentando con precisión estándar...");
-          startGPS(false); // Reintentar con precisión baja
-          return;
+      };
+
+      const onError = (err) => {
+        console.warn("GPS Attempt failed:", err.message, "Code:", err.code);
+        
+        if (err.code === 3 || err.code === 2) { // Timeout o Posición no disponible
+            const nextMode = !highAccuracy;
+            statusEl.textContent = `Reintentando en modo ${nextMode ? 'Alta Precisión' : 'Ahorro'}...`;
+            setTimeout(() => startGPS(nextMode), 2000);
+            return;
         }
 
-        let msg = "Error de ubicación.";
-        if (err.code === 1) msg = "Permiso denegado.";
-        else if (err.code === 2) msg = "Posición no disponible.";
-        else if (err.code === 3) msg = "Tiempo de espera agotado.";
-        
-        statusEl.textContent = msg;
-        gpsBtn.classList.remove('active');
-        navigator.geolocation.clearWatch(gpsWatchId);
-        gpsWatchId = null;
-      }, options);
+        if (err.code === 1) {
+            statusEl.textContent = "Error: Permiso de GPS denegado.";
+            gpsBtn.classList.remove('active');
+        }
+      };
+
+      // Intentar obtener una posición rápida primero
+      navigator.geolocation.getCurrentPosition(onUpdate, (err) => {
+          console.log("Quick fix failed, starting watch...");
+          gpsWatchId = navigator.geolocation.watchPosition(onUpdate, onError, options);
+      }, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 });
     }
 
     gpsBtn.onclick = () => {
@@ -667,9 +674,9 @@
         return;
       }
 
-      if (!window.isSecureContext) {
+      if (!window.isSecureContext && window.location.hostname !== "localhost") {
         statusEl.textContent = 'Error: GPS requiere HTTPS.';
-        alert("La geolocalización requiere una conexión segura (HTTPS).");
+        alert("La geolocalización requiere HTTPS en dispositivos móviles.");
         gpsBtn.classList.remove('active');
         return;
       }
