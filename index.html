@@ -637,19 +637,22 @@
       };
 
       const onError = (err) => {
-        console.warn("GPS Attempt failed:", err.message, "Code:", err.code);
+        const errorDetails = `[Error ${err.code}]: ${err.message}`;
+        console.warn("GPS Attempt failed:", errorDetails);
         
         if (err.code === 3 || err.code === 2) { // Timeout o Posición no disponible
             const nextMode = !highAccuracy;
-            statusEl.textContent = `Reintentando en modo ${nextMode ? 'Alta Precisión' : 'Ahorro'}...`;
-            setTimeout(() => startGPS(nextMode), 2000);
+            statusEl.textContent = `${nextMode ? 'Reintentando Alta Precisión' : 'Reintentando Modo Ahorro'}... ${errorDetails}`;
+            setTimeout(() => {
+                if (gpsBtn.classList.contains('active')) startGPS(nextMode);
+            }, 3000);
             return;
         }
 
-        if (err.code === 1) {
-            statusEl.textContent = "Error: Permiso de GPS denegado.";
-            gpsBtn.classList.remove('active');
-        }
+        statusEl.textContent = `Error crítico: ${errorDetails}`;
+        gpsBtn.classList.remove('active');
+        if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
       };
 
       // Intentar obtener una posición rápida primero
@@ -659,7 +662,7 @@
       }, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 });
     }
 
-    gpsBtn.onclick = () => {
+    gpsBtn.onclick = async () => {
       if (gpsWatchId !== null) {
         navigator.geolocation.clearWatch(gpsWatchId);
         gpsWatchId = null;
@@ -674,9 +677,23 @@
         return;
       }
 
+      // Verificar estado de permisos (si el navegador lo permite)
+      if (navigator.permissions && navigator.permissions.query) {
+          try {
+              const result = await navigator.permissions.query({ name: 'geolocation' });
+              if (result.state === 'denied') {
+                  alert("El acceso a la ubicación está bloqueado. Por favor, habilita los permisos en la configuración de tu navegador para este sitio.");
+                  statusEl.textContent = "Error: Permiso bloqueado.";
+                  return;
+              } else if (result.state === 'prompt') {
+                  statusEl.textContent = "Solicitando permisos de ubicación...";
+              }
+          } catch (e) { console.warn("Permissions API not supported or failed."); }
+      }
+
       if (!window.isSecureContext && window.location.hostname !== "localhost") {
         statusEl.textContent = 'Error: GPS requiere HTTPS.';
-        alert("La geolocalización requiere HTTPS en dispositivos móviles.");
+        alert("¡ATENCIÓN! La geolocalización está desactivada porque este sitio no usa una conexión segura (HTTPS). En dispositivos móviles, esto es obligatorio para que aparezca la solicitud de permisos.");
         gpsBtn.classList.remove('active');
         return;
       }
