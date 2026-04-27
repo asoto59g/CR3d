@@ -66,6 +66,7 @@
   <div id="ui">
     <div class="panel">
       <h2>Visor 3D CR</h2>
+      <div class="layer-item"><input type="checkbox" id="chkCR3D" checked> ⛰️ Relieve 3D (CR3D)</div>
       <div class="layer-item"><input type="checkbox" id="chkPoblados"> 🏘️ Poblados</div>
       <div class="layer-item"><input type="checkbox" id="chkCaminos"> 🛣️ Carreteras</div>
       <div class="layer-item"><input type="checkbox" id="chkRios"> 💧 Ríos</div>
@@ -125,6 +126,7 @@
     const profDistEl = document.getElementById('profDist');
     const btnCloseProfile = document.getElementById('btnCloseProfile');
 
+    const chkCR3D = document.getElementById('chkCR3D');
     const chkPoblados = document.getElementById('chkPoblados');
     const chkCaminos = document.getElementById('chkCaminos');
     const chkRios = document.getElementById('chkRios');
@@ -351,6 +353,7 @@
       statusEl.textContent = `Capa ${layer} lista.`;
     }
 
+    chkCR3D.onchange = () => (tileGroups.visible = chkCR3D.checked);
     chkPoblados.onchange = () => chkPoblados.checked ? loadVectorLayer('poblados') : (vectorGroups.poblados.visible = false);
     chkCaminos.onchange = () => chkCaminos.checked ? loadVectorLayer('carreteras') : (vectorGroups.carreteras.visible = false);
     chkRios.onchange = () => chkRios.checked ? loadVectorLayer('rios') : (vectorGroups.rios.visible = false);
